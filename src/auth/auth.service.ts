@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { AddAdminDto } from 'src/users/dto/create-admin.dto';
-import { LoginAdminDto } from './dtos/login-admin.dto';
+import { LoginDto } from './dtos/login-admin.dto';
 import { OtpVerificationDTO } from './dtos/otpVerification.dto';
 import { JwtPayload } from './types/JwtPayload.interface';
 import { Tokens } from './types/Tokens.interface';
@@ -32,31 +32,29 @@ export class AuthService {
   }
 
   async signin(/*{ phoneNumber }: AuthDTO*/) {
-  //  return this.#sendVerificationCodeTo(phoneNumber);
+    //  return this.#sendVerificationCodeTo(phoneNumber);
   }
 
   async addAdmin(data: AddAdminDto) {
     data.password = await this.hashpassword(data.password);
     return this.userService.addAdmin(data);
   }
-  
-  async loginAdmin({ password, phoneNumber }: LoginAdminDto) {
-   // const adminUser = await this.userService.getUserByPhoneNumber(phoneNumber);
-    const adminUser = await this.userService.findUserById(4);
-    if (!adminUser) throw new UnauthorizedException('user not found');
-    const match = await this.comparePassword(adminUser.password, password);
+
+  async login({ password, email }: LoginDto) {
+    // const adminUser = await this.userService.getUserByPhoneNumber(phoneNumber);
+    const user = await this.userService.findUserByEmail(email);
+    if (!user) throw new UnauthorizedException('user not found');
+    const match = await this.comparePassword(user.password, password);
     if (!match) throw new UnauthorizedException('wrong credentials');
 
     const tokens = await this.#generateTokens({
-      phoneNumber,
-      sub: adminUser.id,
+      email,
+      sub: user.id,
     });
-    await this.#updateRefreshTokenHash(adminUser.id, tokens.refreshToken);
+    await this.#updateRefreshTokenHash(user.id, tokens.refreshToken);
     return tokens;
   }
-  
 
-  
   /*
   async verifyOtp({ otp, phoneNumber, referrerId }: OtpVerificationDTO) {
     // await this.twilioService.verifyPhoneNumber(phoneNumber, otp);
@@ -139,10 +137,13 @@ export class AuthService {
       }
 
       const tokens = await this.#generateTokens({
-        phoneNumber: userDb.phoneNumber,
+        email: userDb.phoneNumber,
         sub: userDb.id,
       });
-      await this.#updateRefreshTokenHash(Number(userDb.id), tokens.refreshToken);
+      await this.#updateRefreshTokenHash(
+        Number(userDb.id),
+        tokens.refreshToken,
+      );
 
       return tokens;
     } catch (err) {
@@ -156,7 +157,7 @@ export class AuthService {
   //private methods------------------------------------------------------------------------------------
   async #sendVerificationCodeTo(phoneNumber: string) {
     try {
-    //  await this.twilioService.initPhoneNumberVerification(phoneNumber);
+      //  await this.twilioService.initPhoneNumberVerification(phoneNumber);
       return {
         message: `a message containing the verification code is sent into ${phoneNumber}`,
       };
@@ -193,11 +194,14 @@ export class AuthService {
     refresh_token: string,
   ): Promise<void> {
     const refresh_token_hash = await bcrypt.hash(refresh_token, 12);
-    await this.userService.updateRefreshToken(Number(userId), refresh_token_hash);
+    await this.userService.updateRefreshToken(
+      Number(userId),
+      refresh_token_hash,
+    );
   }
   async freeToken(userId: number) {
     const user = await this.userService.findUserById(Number(userId));
-    return this.#generateTokens({ sub: userId, phoneNumber: user.phoneNumber });
+    return this.#generateTokens({ sub: userId, email: user.email });
   }
 
   extractUserIdFromAccessToken(accessToken: string): string | null {
@@ -216,5 +220,4 @@ export class AuthService {
     }
     return null;
   }
-  
 }

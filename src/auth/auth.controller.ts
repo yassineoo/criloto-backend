@@ -18,14 +18,12 @@ import { OtpVerificationDTO } from './dtos/otpVerification.dto';
 import { JwtAccessTokenGuard } from './guards/jwt-access-token.guard';
 import { JwtRefreshTokenGuard } from './guards/jwt-refresh-token.guard';
 import { RoleGuard } from './guards/RolesGuard.guard';
-import { LoginAdminDto } from './dtos/login-admin.dto';
+import { LoginDto } from './dtos/login-admin.dto';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly authService: AuthService,
-  ) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post('signin')
   async signin(@Body() authDto: AuthDTO) {
@@ -52,7 +50,6 @@ export class AuthController {
   }
 */
 
-
   @Post('free-tokens/:userId')
   @ApiParam({ name: 'userId', required: true })
   async freeTokens(@Param('userId') userId: string) {
@@ -60,13 +57,9 @@ export class AuthController {
   }
 
   @ApiBearerAuth()
-  @Post('login/admin')
-  async loginAdmin(
-    @Body() data: LoginAdminDto,
-    @Res({ passthrough: true }) res,
-    @Req() req,
-  ) {
-    const tokens = await this.authService.loginAdmin(data);
+  @Post('login')
+  async login(@Body() data: LoginDto, @Res({ passthrough: true }) res) {
+    const tokens = await this.authService.login(data);
 
     res.cookie('refreshToken', tokens.refreshToken, {
       maxAge: new Date(+process.env.JWT_REFRESH_TOKEN_EXPIRES_IN),

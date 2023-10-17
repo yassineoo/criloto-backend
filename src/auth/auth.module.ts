@@ -8,10 +8,10 @@ import { JwtAccessTokenStrategy } from './passport-strategies/jwt-access-token-s
 import { JwtRefreshTokenGuard } from './guards/jwt-refresh-token.guard';
 import { JwtRefreshTokenStrategy } from './passport-strategies/jwt-refresh-token-strategy';
 import { RoleGuard } from './guards/RolesGuard.guard';
-
+import { UsersModule } from 'src/users/users.module';
 
 @Module({
-  imports: [ JwtModule.register({})],
+  imports: [JwtModule.register({}), UsersModule],
   providers: [
     AuthService,
     JwtAccessTokenGuard,
